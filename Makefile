@@ -6,7 +6,7 @@
 # Description: it's a Makefile
 
 CC=gcc
-CFLAGS= -Wall -std=c99 -Wextra -g -pedantic
+CFLAGS= -Wall -std=c99 -Wextra -g -pedantic -D_POSIX_C_SOURCE=200908L
 
 .PHONY: all test clean
 
@@ -18,5 +18,12 @@ mush.o: mush.c command.h
 
 command.o: command.c command.h
 
+# tests
+CFLAGS+=-D_TEST
+
+test: command
+
+command: command.o
+
 clean:
-	$(RM) mush *.o
+	$(RM) command mush *.o

@@ -7,7 +7,7 @@
  */
 
 /* standard libraries */
-#include <unistd.c>
+#include <unistd.h>
 #include <stdio.h>
 
 /* system libraries */
@@ -31,11 +31,11 @@ int print_prompt()
 }
 void loop()
 {
-	bool exit = false;
+	int exit = 0;
 	char *line = NULL;
 
 	while (!exit) {
-		if (!print_prompt) {
+		if (!print_prompt()) {
 			return;
 		}
 

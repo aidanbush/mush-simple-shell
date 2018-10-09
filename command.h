@@ -10,9 +10,9 @@
 #define COMMAND_H
 
 typedef struct {
-	char *elems[],
-	int max_len,
-	int cur_len,
+	char **elems;
+	int max_len;
+	int cur_len;
 } command_s;
 
 command_s *get_command();
