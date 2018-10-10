@@ -9,9 +9,8 @@
 /* standard libraries */
 #include <unistd.h>
 #include <stdio.h>
-
-/* system libraries */
 #include <linux/limits.h>
+#include <sys/wait.h>
 
 /* project includes */
 #include "command.h"
@@ -29,27 +28,53 @@ int print_prompt()
 
 	return 1;
 }
+
+void run_command(command_s *command)
+{
+	int pid = fork();
+
+	if (0 > pid) {
+		// error
+		fprintf(stderr, "unable to create process\n");
+	} else if (0 == pid) {
+		// child
+		if (-1 == execvp(command->elems[0], command->elems)) {
+			fprintf(stderr, "unable to run command %s\n",
+					command->elems[0]);
+		}
+	}
+	// parent
+
+	wait(NULL);
+}
+
 void loop()
 {
 	int exit = 0;
-	char *line = NULL;
+	command_s *command;
 
 	while (!exit) {
 		if (!print_prompt()) {
 			return;
 		}
 
-		// grab input
-		get_command();
+		command = get_command();
+		if (0 == command->cur_len) {
+			// change to goto
+			free_command(command);
+			continue;
+		}
 
-		// parse input
+		// if command
+		// run command
+		// print_command(command);
+		run_command(command);
 
-		// if command run
 		// wait for child to die
 	}
 }
 
-int main(int argc, char *argv[])
+int main()
 {
 	loop();
 	return 1;

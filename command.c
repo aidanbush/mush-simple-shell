@@ -80,7 +80,7 @@ static command_s *init_command(int len)
 	return command;
 }
 
-static void free_command(command_s *command)
+void free_command(command_s *command)
 {
 	for (int i = 0; i < command->cur_len; i++)
 		free(command->elems[i]);
@@ -127,6 +127,13 @@ static command_s *split_command(char *line, size_t len)
 	return command;
 }
 
+void print_command(command_s *command)
+{
+	for (int i = 0; i < command->cur_len; i++)
+		printf("%s ", command->elems[i]);
+	printf("\n");
+}
+
 command_s *get_command()
 {
 	char *line = NULL;
@@ -142,6 +149,7 @@ command_s *get_command()
 	// split line
 	command = split_command(line, len);
 	free(line);
+
 	return command;
 }
 

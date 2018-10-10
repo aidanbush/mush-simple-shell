@@ -15,6 +15,12 @@ typedef struct {
 	int cur_len;
 } command_s;
 
+// prints the given command putting spaces between elements
+void print_command(command_s *);
+
+void free_command(command_s *);
+
+// gets the next command from stdin and parses into command struct
 command_s *get_command();
 
 #endif /* COMMAND_H */

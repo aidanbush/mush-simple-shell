@@ -12,7 +12,7 @@ CFLAGS= -Wall -std=c99 -Wextra -g -pedantic -D_POSIX_C_SOURCE=200908L
 
 all: mush
 
-mush: mush.o
+mush: mush.o command.o
 
 mush.o: mush.c command.h
 
