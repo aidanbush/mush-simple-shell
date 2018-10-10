@@ -19,11 +19,10 @@ mush.o: mush.c command.h
 command.o: command.c command.h
 
 # tests
-CFLAGS+=-D_TEST
-
 test: command
 
-command: command.o
+command: command.c command.h
+	$(CC) $(CFLAGS) -D_TEST -o $@ $^
 
 clean:
 	$(RM) command mush *.o

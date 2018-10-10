@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <linux/limits.h>
 #include <sys/wait.h>
+#include <stdlib.h>
 
 /* project includes */
 #include "command.h"
@@ -42,6 +43,7 @@ void run_command(command_s *command)
 			fprintf(stderr, "unable to run command %s\n",
 					command->elems[0]);
 		}
+		exit(1);
 	}
 	// parent
 
@@ -59,6 +61,12 @@ void loop()
 		}
 
 		command = get_command();
+		if (NULL == command) {
+			exit = 1;
+			printf("\n");
+			continue;
+		}
+
 		if (0 == command->cur_len) {
 			// change to goto
 			free_command(command);
@@ -67,7 +75,7 @@ void loop()
 
 		// if command
 		// run command
-		// print_command(command);
+		//print_command(command);
 		run_command(command);
 
 		// wait for child to die
