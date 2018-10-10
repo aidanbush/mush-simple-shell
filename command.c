@@ -129,8 +129,10 @@ static command_s *split_command(char *line, size_t len)
 
 void print_command(command_s *command)
 {
+	printf("cur_len: %d\n", command->cur_len);
+	printf("max_len: %d\n", command->max_len);
 	for (int i = 0; i < command->cur_len; i++)
-		printf("%s ", command->elems[i]);
+		printf("|%s| ", command->elems[i]);
 	printf("\n");
 }
 
@@ -146,8 +148,9 @@ command_s *get_command()
 		free(line);
 		return NULL;
 	}
+
 	// split line
-	command = split_command(line, len);
+	command = split_command(line, read);
 	free(line);
 
 	return command;
@@ -164,6 +167,7 @@ command_s *get_command()
 
 #define TEST_COM_STR_1		"mv 1 2 3 4 5 6 7 8 9 0 dir"
 #define TEST_COM_STR_2		"  	messy  command 	line 	 "
+#define TEST_COM_STR_3		"\n"
 
 #define TEST_COM_SPLIT_1	{"mv", "1", "2", "3", "4", "5", "6", "7", "8", \
 				"9", "0", "dir"}
@@ -171,10 +175,11 @@ command_s *get_command()
 
 #define TEST_COM_STR_LEN_1	strlen((TEST_COM_STR_1))
 #define TEST_COM_STR_LEN_2	strlen((TEST_COM_STR_2))
+#define TEST_COM_STR_LEN_3	strlen((TEST_COM_STR_3))
 
 #define TEST_COM_NUM_1		12
 #define TEST_COM_NUM_2		3
-
+#define TEST_COM_NUM_3		0
 
 void test_init_command()
 {
@@ -262,6 +267,18 @@ void test_split_command()
 	for (int i = 0; i < command->cur_len; i++)
 		assert(0 == strncmp(command->elems[i], results2[i],
 					strlen(results2[i])));
+
+	free_command(command);
+
+	// third test
+	command_line = (TEST_COM_STR_3);
+	len = (TEST_COM_STR_LEN_3);
+
+	command = split_command(command_line, len);
+
+	assert(NULL != command);
+
+	assert(TEST_COM_NUM_3 == command->cur_len);
 
 	free_command(command);
 
