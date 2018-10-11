@@ -12,9 +12,12 @@
 #include <linux/limits.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* project includes */
 #include "command.h"
+
+volatile int exit_shell = 0;
 
 int print_prompt()
 {
@@ -50,22 +53,55 @@ void run_command(command_s *command)
 	wait(NULL);
 }
 
+void run_cd(command_s *command) {
+	char *home = getenv("HOME");
+
+	if (2 < command->cur_len) {
+		fprintf(stderr, "cd: too many arguments\n");
+		return;
+	} if (2 == command->cur_len) {
+		chdir(command->elems[1]);
+	} else {
+		if (NULL == home) {
+			fprintf(stderr, "cd: $HOME undefined\n");
+			return;
+		}
+		chdir(home);
+	}
+}
+
+int built_in(command_s *command) {
+	if (0 == strncmp(command->elems[0], "cd", strnlen(command->elems[0], 3))) {
+		run_cd(command);
+		return 1;
+	} else if (0 == strncmp(command->elems[0], "history", strnlen(command->elems[0], 8))) {
+		// run_history(command);
+		printf("history\n");
+		return 1;
+	} else if (0 == strncmp(command->elems[0], "exit", strnlen(command->elems[0], 5))) {
+		exit_shell = 1;
+		return 1;
+	}
+	return 0;
+}
+
 void loop()
 {
-	int exit = 0;
 	command_s *command;
 
-	while (!exit) {
+	while (!exit_shell) {
 		if (!print_prompt()) {
 			return;
 		}
 
 		command = get_command();
 		if (NULL == command) {
-			exit = 1;
+			exit_shell = 1;
 			printf("\n");
 			continue;
 		}
+
+		// add to history
 
 		if (0 == command->cur_len) {
 			// change to goto
@@ -73,12 +109,12 @@ void loop()
 			continue;
 		}
 
-		// if command
-		// run command
 		//print_command(command);
-		run_command(command);
-
-		// wait for child to die
+		// if built in
+		if (built_in(command)) {
+		} else {
+			run_command(command);
+		}
 	}
 }
 
