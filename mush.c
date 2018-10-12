@@ -18,6 +18,7 @@
 #include "command.h"
 
 volatile int exit_shell = 0;
+command_s *history = NULL;
 
 int print_prompt()
 {
@@ -53,7 +54,8 @@ void run_command(command_s *command)
 	wait(NULL);
 }
 
-void run_cd(command_s *command) {
+void run_cd(command_s *command)
+{
 	char *home = getenv("HOME");
 
 	if (2 < command->cur_len) {
@@ -70,13 +72,18 @@ void run_cd(command_s *command) {
 	}
 }
 
+void run_history()
+{
+	for (int i = 0; i < history->cur_len; i++)
+			printf("%s", history->elems[i]);
+}
+
 int built_in(command_s *command) {
 	if (0 == strncmp(command->elems[0], "cd", strnlen(command->elems[0], 3))) {
 		run_cd(command);
 		return 1;
 	} else if (0 == strncmp(command->elems[0], "history", strnlen(command->elems[0], 8))) {
-		// run_history(command);
-		printf("history\n");
+		run_history();
 		return 1;
 	} else if (0 == strncmp(command->elems[0], "exit", strnlen(command->elems[0], 5))) {
 		exit_shell = 1;
@@ -85,23 +92,28 @@ int built_in(command_s *command) {
 	return 0;
 }
 
+void add_to_history(char *cmd_str)
+{
+	// add string to history
+	add_command(history, cmd_str, strlen(cmd_str)); // replace with actual length
+}
+
 void loop()
 {
 	command_s *command;
+	char *cmd_str = NULL;
 
 	while (!exit_shell) {
 		if (!print_prompt()) {
 			return;
 		}
 
-		command = get_command();
+		command = get_command(&cmd_str);
 		if (NULL == command) {
 			exit_shell = 1;
 			printf("\n");
 			continue;
 		}
-
-		// add to history
 
 		if (0 == command->cur_len) {
 			// change to goto
@@ -111,15 +123,29 @@ void loop()
 
 		//print_command(command);
 		// if built in
-		if (built_in(command)) {
-		} else {
+		if (!built_in(command)) {
 			run_command(command);
 		}
+
+		// add to history
+		if (NULL != cmd_str) {
+			add_to_history(cmd_str);
+			free(cmd_str);
+		}
+
+		free_command(command);
 	}
 }
 
 int main()
 {
+	history = init_command(COMMAND_START_SIZE);
+
 	loop();
+
+	printf("exiting\n");
+	free_command(history);
+	history = NULL;
+
 	return 1;
 }

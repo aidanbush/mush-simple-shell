@@ -16,8 +16,6 @@
 /* project includes */
 #include "command.h"
 
-#define COMMAND_START_SIZE	4
-
 // takes a command pointer and doubles the size + 1 of its elem array
 // returns success or failure
 static int resize_command(command_s *command)
@@ -41,7 +39,7 @@ static int resize_command(command_s *command)
 	return 1;
 }
 
-static int add_command(command_s *command, char *str, size_t len)
+int add_command(command_s *command, char *str, size_t len)
 {
 	if (NULL == command)
 		return 0;
@@ -58,7 +56,7 @@ static int add_command(command_s *command, char *str, size_t len)
 	return 1;
 }
 
-static command_s *init_command(int len)
+command_s *init_command(int len)
 {
 	if (len <= 0)
 		return NULL;
@@ -136,7 +134,7 @@ void print_command(command_s *command)
 	printf("\n");
 }
 
-command_s *get_command()
+command_s *get_command(char **str)
 {
 	char *line = NULL;
 	size_t len = 0;
@@ -146,12 +144,16 @@ command_s *get_command()
 	read = getline(&line, &len, stdin);
 	if (-1 == read) {
 		free(line);
+		*str = NULL;
 		return NULL;
 	}
 
 	// split line
 	command = split_command(line, read);
-	free(line);
+	if (str == NULL)
+		free(line);
+	else
+		*str = line;
 
 	return command;
 }
