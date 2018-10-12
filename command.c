@@ -185,8 +185,9 @@ str_arr_s *get_command(char **str, int *eof)
 
 	*eof = 0;
 
-	// save errno
+	int old_errno = errno;
 	errno = 0;
+
 	read = getline(&line, &len, stdin);
 	if (-1 == read) {
 		free(line);
@@ -197,8 +198,10 @@ str_arr_s *get_command(char **str, int *eof)
 		else
 			clearerr(stdin);
 
+		errno = old_errno;
 		return NULL;
 	}
+	errno = old_errno;
 
 	// split line
 	command = split_command(line, read);

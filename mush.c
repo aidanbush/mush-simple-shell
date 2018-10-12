@@ -15,12 +15,12 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <errno.h>
 
 /* project includes */
 #include "command.h"
 
 int exit_shell;
-pid_t child_pid;
 str_arr_s *history = NULL;
 
 // sigint handler, does nothing with the signal
@@ -80,10 +80,14 @@ void run_command(str_arr_s *command)
 	// parent
 
 	// check if fails
-	wait(&exit_code);
+	while (-1 == wait(&exit_code))
+		if (errno != EINTR)
+			break;
+
+	exit_code = (WEXITSTATUS(exit_code));
 
 	if (0 == exit_code)
-		printf("[%d] terminated successfully)\n", pid);
+		printf("[%d] terminated successfully\n", pid);
 	else
 		printf("[%d] terminated with code %d\n", pid, exit_code);
 }
@@ -140,7 +144,8 @@ void loop(void)
 
 	while (!exit_shell) {
 		if (!print_prompt()) {
-			return;
+			exit_shell = 1;
+			continue;
 		}
 
 		command = get_command(&cmd_str, &eof);
@@ -158,11 +163,9 @@ void loop(void)
 			continue;
 		}
 
-		//print_str_arr(command);
 		// if built in
-		if (!built_in(command)) {
+		if (!built_in(command))
 			run_command(command);
-		}
 
 		// add to history
 		if (NULL != cmd_str) {
