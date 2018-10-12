@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 /* project includes */
 #include "command.h"
@@ -39,6 +40,9 @@ static int resize_str_arr(str_arr_s *command)
 	return 1;
 }
 
+// Takes a str_arr_s and adds a new string of length len to it, resizing if
+// required.
+// returns 1 on success otherwise 0
 int add_str_arr(str_arr_s *command, char *str, size_t len)
 {
 	if (NULL == command)
@@ -56,6 +60,8 @@ int add_str_arr(str_arr_s *command, char *str, size_t len)
 	return 1;
 }
 
+// checks for if the string str of len length is an environment variable,
+// returning that variables value if it exists, otherwise NULL
 static char *getenv_len(char *str, size_t len)
 {
 	char *env;
@@ -122,6 +128,7 @@ void free_str_arr(str_arr_s *command)
 	free(command);
 }
 
+// TODO add escape characters
 static str_arr_s *split_command(char *line, size_t len)
 {
 	str_arr_s *command = init_str_arr(COMMAND_START_SIZE);
@@ -169,17 +176,27 @@ void print_str_arr(str_arr_s *command)
 	printf("\n");
 }
 
-str_arr_s *get_command(char **str)
+str_arr_s *get_command(char **str, int *eof)
 {
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
 	str_arr_s *command = NULL;
 
+	*eof = 0;
+
+	// save errno
+	errno = 0;
 	read = getline(&line, &len, stdin);
 	if (-1 == read) {
 		free(line);
 		*str = NULL;
+
+		if (errno != EINTR)
+			*eof = 1;
+		else
+			clearerr(stdin);
+
 		return NULL;
 	}
 

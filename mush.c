@@ -13,14 +13,40 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <sys/types.h>
 
 /* project includes */
 #include "command.h"
 
-volatile int exit_shell = 0;
+int exit_shell;
+pid_t child_pid;
 str_arr_s *history = NULL;
 
-int print_prompt()
+// sigint handler, does nothing with the signal
+void sigint_handler(int par)
+{
+	return;
+}
+
+// create the new sigint handler
+int create_sigint_handler(void)
+{
+	struct sigaction sa = {
+		.sa_handler = &sigint_handler
+	};
+
+	sigemptyset(&sa.sa_mask);
+
+	int err = sigaction(SIGINT, &sa, NULL);
+	if (err == -1)
+		return 0;
+
+	return 1;
+}
+
+// prints the prompt
+int print_prompt(void)
 {
 	char path[PATH_MAX];
 
@@ -34,6 +60,7 @@ int print_prompt()
 	return 1;
 }
 
+// run the given command
 void run_command(str_arr_s *command)
 {
 	int exit_code = 0;
@@ -52,21 +79,22 @@ void run_command(str_arr_s *command)
 	}
 	// parent
 
+	// check if fails
 	wait(&exit_code);
+
 	if (0 == exit_code)
 		printf("[%d] terminated successfully)\n", pid);
 	else
 		printf("[%d] terminated with code %d\n", pid, exit_code);
 }
 
-void run_cd(str_arr_s *command)
+void cd(str_arr_s *command)
 {
 	char *home = getenv("HOME");
 
 	if (2 < command->cur_len) {
 		fprintf(stderr, "cd: too many arguments\n");
-		return;
-	} if (2 == command->cur_len) {
+	} else if (2 == command->cur_len) {
 		chdir(command->elems[1]);
 	} else {
 		if (NULL == home) {
@@ -77,18 +105,20 @@ void run_cd(str_arr_s *command)
 	}
 }
 
-void run_history()
+// prints the history
+void print_history(void)
 {
 	for (int i = 0; i < history->cur_len; i++)
 			printf("%s", history->elems[i]);
 }
 
-int built_in(str_arr_s *command) {
+int built_in(str_arr_s *command)
+{
 	if (0 == strncmp(command->elems[0], "cd", strnlen(command->elems[0], 3))) {
-		run_cd(command);
+		cd(command);
 		return 1;
 	} else if (0 == strncmp(command->elems[0], "history", strnlen(command->elems[0], 8))) {
-		run_history();
+		print_history();
 		return 1;
 	} else if (0 == strncmp(command->elems[0], "exit", strnlen(command->elems[0], 5))) {
 		exit_shell = 1;
@@ -99,23 +129,25 @@ int built_in(str_arr_s *command) {
 
 void add_to_history(char *cmd_str)
 {
-	// add string to history
 	add_str_arr(history, cmd_str, strlen(cmd_str)); // replace with actual length
 }
 
-void loop()
+void loop(void)
 {
 	str_arr_s *command;
 	char *cmd_str = NULL;
+	int eof = 0;
 
 	while (!exit_shell) {
 		if (!print_prompt()) {
 			return;
 		}
 
-		command = get_command(&cmd_str);
+		command = get_command(&cmd_str, &eof);
 		if (NULL == command) {
-			exit_shell = 1;
+			if (eof)
+				exit_shell = 1;
+
 			printf("\n");
 			continue;
 		}
@@ -144,6 +176,9 @@ void loop()
 
 int main()
 {
+	if (!create_sigint_handler())
+		return 1;
+
 	history = init_str_arr(COMMAND_START_SIZE);
 
 	loop();
@@ -151,5 +186,5 @@ int main()
 	free_str_arr(history);
 	history = NULL;
 
-	return 1;
+	return 0;
 }
