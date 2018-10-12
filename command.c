@@ -18,7 +18,7 @@
 
 // takes a command pointer and doubles the size + 1 of its elem array
 // returns success or failure
-static int resize_command(command_s *command)
+static int resize_str_arr(str_arr_s *command)
 {
 	if (NULL == command)
 		return 0;
@@ -39,15 +39,17 @@ static int resize_command(command_s *command)
 	return 1;
 }
 
-int add_command(command_s *command, char *str, size_t len)
+int add_str_arr(str_arr_s *command, char *str, size_t len)
 {
 	if (NULL == command)
 		return 0;
 
+	// if environment variable replace
+
 	char *new_str = strndup(str, len);
 
 	if (command->cur_len >= command->max_len)
-		if (!resize_command(command))
+		if (!resize_str_arr(command))
 			return 0;
 
 	command->elems[command->cur_len] = new_str;
@@ -56,12 +58,12 @@ int add_command(command_s *command, char *str, size_t len)
 	return 1;
 }
 
-command_s *init_command(int len)
+str_arr_s *init_str_arr(int len)
 {
 	if (len <= 0)
 		return NULL;
 
-	command_s *command = calloc(sizeof(command_s), 1);
+	str_arr_s *command = calloc(sizeof(str_arr_s), 1);
 	if (NULL == command)
 		return NULL;
 
@@ -78,7 +80,7 @@ command_s *init_command(int len)
 	return command;
 }
 
-void free_command(command_s *command)
+void free_str_arr(str_arr_s *command)
 {
 	for (int i = 0; i < command->cur_len; i++)
 		free(command->elems[i]);
@@ -87,9 +89,9 @@ void free_command(command_s *command)
 	free(command);
 }
 
-static command_s *split_command(char *line, size_t len)
+static str_arr_s *split_command(char *line, size_t len)
 {
-	command_s *command = init_command(COMMAND_START_SIZE);
+	str_arr_s *command = init_str_arr(COMMAND_START_SIZE);
 	size_t start = 0;
 	size_t i = 0;
 
@@ -102,8 +104,8 @@ static command_s *split_command(char *line, size_t len)
 	while (i < len) {
 		if (isspace(line[i])) {
 			// new section from start to i - 1
-			if (!add_command(command, line + start, i - start)) {
-				free_command(command);
+			if (!add_str_arr(command, line + start, i - start)) {
+				free_str_arr(command);
 				return NULL;
 			}
 			// skip space after
@@ -116,8 +118,8 @@ static command_s *split_command(char *line, size_t len)
 	}
 
 	if (!isspace(line[start]) && start < len){
-		if (!add_command(command, line + start, i - start)) {
-			free_command(command);
+		if (!add_str_arr(command, line + start, i - start)) {
+			free_str_arr(command);
 			return NULL;
 		}
 	}
@@ -125,7 +127,7 @@ static command_s *split_command(char *line, size_t len)
 	return command;
 }
 
-void print_command(command_s *command)
+void print_command(str_arr_s *command)
 {
 	printf("cur_len: %d\n", command->cur_len);
 	printf("max_len: %d\n", command->max_len);
@@ -134,12 +136,12 @@ void print_command(command_s *command)
 	printf("\n");
 }
 
-command_s *get_command(char **str)
+str_arr_s *get_command(char **str)
 {
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
-	command_s *command = NULL;
+	str_arr_s *command = NULL;
 
 	read = getline(&line, &len, stdin);
 	if (-1 == read) {
@@ -183,10 +185,10 @@ command_s *get_command(char **str)
 #define TEST_COM_NUM_2		3
 #define TEST_COM_NUM_3		0
 
-void test_init_command()
+void test_init_str_arr()
 {
 	// test create valid command
-	command_s *command = init_command((TEST_LEN));
+	str_arr_s *command = init_str_arr((TEST_LEN));
 
 	assert(NULL != command);
 	assert((TEST_LEN) == command->max_len);
@@ -196,20 +198,20 @@ void test_init_command()
 	for (int i = 0; i < (TEST_LEN); i++)
 		assert(NULL == command->elems[i]);
 
-	free_command(command);
+	free_str_arr(command);
 
 	// test non accepted values
-	assert(NULL == init_command(-1));
-	assert(NULL == init_command(0));
+	assert(NULL == init_str_arr(-1));
+	assert(NULL == init_str_arr(0));
 }
 
-void test_resize_command()
+void test_resize_str_arr()
 {
-	command_s *command = init_command((TEST_LEN));
+	str_arr_s *command = init_str_arr((TEST_LEN));
 	for (int i = 0; i < (TEST_LEN); i++)
 		command->elems[0] = (char *) (TEST_VALUE);
 
-	assert(1 == resize_command(command));
+	assert(1 == resize_str_arr(command));
 	assert((TEST_LEN) < command->max_len);
 
 	for (int i = 0; i < (TEST_LEN); i++)
@@ -218,23 +220,23 @@ void test_resize_command()
 	for (int i = (TEST_LEN); i < command->max_len; i++)
 		assert(NULL == command->elems[i]);
 
-	free_command(command);
+	free_str_arr(command);
 
 	// test with NULL command
-	assert(0 == resize_command(NULL));
+	assert(0 == resize_str_arr(NULL));
 }
 
-void test_add_command()
+void test_add_str_arr()
 {
-	command_s *command = init_command((TEST_LEN));
+	str_arr_s *command = init_str_arr((TEST_LEN));
 	for (int i = 0; i < (TEST_LEN); i++)
 		command->elems[0] = (char *) (TEST_VALUE);
 
-	assert(1 == add_command(command, TEST_STR, TEST_STR_LEN));
+	assert(1 == add_str_arr(command, TEST_STR, TEST_STR_LEN));
 	assert(0 == strncmp(command->elems[0], TEST_STR, TEST_STR_LEN));
 	assert(1 == command->cur_len);
 
-	free_command(command);
+	free_str_arr(command);
 }
 
 void test_split_command()
@@ -243,7 +245,7 @@ void test_split_command()
 	char *results1[] = TEST_COM_SPLIT_1;
 	int len = (TEST_COM_STR_LEN_1);
 
-	command_s *command = split_command(command_line, len);
+	str_arr_s *command = split_command(command_line, len);
 
 	assert(NULL != command);
 
@@ -253,7 +255,7 @@ void test_split_command()
 		assert(0 == strncmp(command->elems[i], results1[i],
 					strlen(results1[i])));
 
-	free_command(command);
+	free_str_arr(command);
 
 	// second test
 	command_line = (TEST_COM_STR_2);
@@ -270,7 +272,7 @@ void test_split_command()
 		assert(0 == strncmp(command->elems[i], results2[i],
 					strlen(results2[i])));
 
-	free_command(command);
+	free_str_arr(command);
 
 	// third test
 	command_line = (TEST_COM_STR_3);
@@ -282,23 +284,23 @@ void test_split_command()
 
 	assert(TEST_COM_NUM_3 == command->cur_len);
 
-	free_command(command);
+	free_str_arr(command);
 
 	// test with empty string
 	command = split_command("", 0);
 
 	assert(0 == command->cur_len);
 
-	free_command(command);
+	free_str_arr(command);
 }
 
 int main()
 {
-	test_init_command();
+	test_init_str_arr();
 
-	test_resize_command();
+	test_resize_str_arr();
 
-	test_add_command();
+	test_add_str_arr();
 
 	test_split_command();
 
