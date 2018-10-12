@@ -44,8 +44,6 @@ int add_str_arr(str_arr_s *command, char *str, size_t len)
 	if (NULL == command)
 		return 0;
 
-	// if environment variable replace
-
 	char *new_str = strndup(str, len);
 
 	if (command->cur_len >= command->max_len)
@@ -56,6 +54,41 @@ int add_str_arr(str_arr_s *command, char *str, size_t len)
 	command->cur_len++;
 
 	return 1;
+}
+
+static char *getenv_len(char *str, size_t len)
+{
+	char *env;
+	char c;
+
+	c = str[len];
+	str[len] = '\0';
+
+	env = getenv(str);
+
+	str[len] = c;
+
+	return env;
+}
+
+static int add_command(str_arr_s *command, char *str, size_t len)
+{
+	if (NULL == command)
+		return 0;
+
+	char *env;
+
+	// if environment variable replace
+	if (1 < len && '$' == str[0]) {
+		env = getenv_len(str + 1, len - 1);
+
+		if (NULL != env) {
+			str = env;
+			len = strlen(env);
+		}
+	}
+
+	return add_str_arr(command, str, len);
 }
 
 str_arr_s *init_str_arr(int len)
@@ -104,7 +137,7 @@ static str_arr_s *split_command(char *line, size_t len)
 	while (i < len) {
 		if (isspace(line[i])) {
 			// new section from start to i - 1
-			if (!add_str_arr(command, line + start, i - start)) {
+			if (!add_command(command, line + start, i - start)) {
 				free_str_arr(command);
 				return NULL;
 			}
@@ -118,7 +151,7 @@ static str_arr_s *split_command(char *line, size_t len)
 	}
 
 	if (!isspace(line[start]) && start < len){
-		if (!add_str_arr(command, line + start, i - start)) {
+		if (!add_command(command, line + start, i - start)) {
 			free_str_arr(command);
 			return NULL;
 		}
@@ -127,7 +160,7 @@ static str_arr_s *split_command(char *line, size_t len)
 	return command;
 }
 
-void print_command(str_arr_s *command)
+void print_str_arr(str_arr_s *command)
 {
 	printf("cur_len: %d\n", command->cur_len);
 	printf("max_len: %d\n", command->max_len);

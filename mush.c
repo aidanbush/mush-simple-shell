@@ -126,7 +126,7 @@ void loop()
 			continue;
 		}
 
-		//print_command(command);
+		//print_str_arr(command);
 		// if built in
 		if (!built_in(command)) {
 			run_command(command);
