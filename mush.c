@@ -94,13 +94,14 @@ void run_command(str_arr_s *command)
 
 void cd(str_arr_s *command)
 {
-	char *home = getenv("HOME");
+	char *home = NULL;
 
 	if (2 < command->cur_len) {
 		fprintf(stderr, "cd: too many arguments\n");
 	} else if (2 == command->cur_len) {
 		chdir(command->elems[1]);
 	} else {
+		home = getenv("HOME");
 		if (NULL == home) {
 			fprintf(stderr, "cd: $HOME undefined\n");
 			return;
@@ -116,18 +117,43 @@ void print_history(void)
 			printf("%s", history->elems[i]);
 }
 
+int set_env(char *command, char *eq_pos)
+{
+	// fix eq_pos
+	char c = eq_pos[0];
+
+	eq_pos[0] = '\0';
+
+	int err = setenv(command, eq_pos + 1, 1);
+
+	eq_pos[0] = c;
+
+	return err;
+}
+
 int built_in(str_arr_s *command)
 {
-	if (0 == strncmp(command->elems[0], "cd", strnlen(command->elems[0], 3))) {
+	// fix
+	char *equal_pos = NULL;
+
+	if (0 == strncmp(command->elems[0], "cd",
+				strnlen(command->elems[0], 3))) {
 		cd(command);
 		return 1;
-	} else if (0 == strncmp(command->elems[0], "history", strnlen(command->elems[0], 8))) {
+	} else if (0 == strncmp(command->elems[0], "history",
+				strnlen(command->elems[0], 8))) {
 		print_history();
 		return 1;
-	} else if (0 == strncmp(command->elems[0], "exit", strnlen(command->elems[0], 5))) {
+	} else if (0 == strncmp(command->elems[0], "exit",
+				strnlen(command->elems[0], 5))) {
 		exit_shell = 1;
 		return 1;
+	} else if (command->cur_len == 1 &&
+			(equal_pos = strchr(command->elems[0], '=')) != NULL) {
+		set_env(command->elems[0], equal_pos);
+		return 1;
 	}
+
 	return 0;
 }
 
