@@ -79,7 +79,7 @@ void run_command(str_arr_s *command)
 	}
 	// parent
 
-	// check if fails
+	// continue to call on interupt errors
 	while (-1 == wait(&exit_code))
 		if (errno != EINTR)
 			break;
@@ -117,25 +117,35 @@ void print_history(void)
 			printf("%s", history->elems[i]);
 }
 
-int set_env(char *command, char *eq_pos)
+// sets the environment variable, using the equal sign to
+void set_env(str_arr_s *command)
 {
-	// fix eq_pos
+	char *eq_pos = NULL;
+	if (command->cur_len != 2) {
+		fprintf(stderr, "One argument of the format name=value\n");
+		return;
+	}
+
+	if ((eq_pos = strchr(command->elems[1], '=')) == NULL) {
+		fprintf(stderr, "use the format name=value\n");
+		return;
+	}
+
 	char c = eq_pos[0];
 
 	eq_pos[0] = '\0';
 
-	int err = setenv(command, eq_pos + 1, 1);
+	if (setenv(command->elems[1], eq_pos + 1, 1) == -1)
+		fprintf(stderr, "error in setting enviroment variable\n");
 
 	eq_pos[0] = c;
 
-	return err;
+	return;
 }
 
+// checks for and runs built in commands, or returns 0 if it is not built in
 int built_in(str_arr_s *command)
 {
-	// fix
-	char *equal_pos = NULL;
-
 	if (0 == strncmp(command->elems[0], "cd",
 				strnlen(command->elems[0], 3))) {
 		cd(command);
@@ -148,9 +158,9 @@ int built_in(str_arr_s *command)
 				strnlen(command->elems[0], 5))) {
 		exit_shell = 1;
 		return 1;
-	} else if (command->cur_len == 1 &&
-			(equal_pos = strchr(command->elems[0], '=')) != NULL) {
-		set_env(command->elems[0], equal_pos);
+	} else if (0 == strncmp(command->elems[0], "set",
+				strnlen(command->elems[0], 4))) {
+		set_env(command);
 		return 1;
 	}
 
