@@ -16,6 +16,7 @@
 
 /* project includes */
 #include "command.h"
+#include "memwatch.h"
 
 // takes a command pointer and doubles the size + 1 of its elem array
 // returns success or failure

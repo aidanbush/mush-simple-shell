@@ -19,6 +19,7 @@
 
 /* project includes */
 #include "command.h"
+#include "memwatch.h"
 
 int exit_shell;
 str_arr_s *history = NULL;
