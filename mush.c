@@ -178,6 +178,7 @@ void loop(void)
 	str_arr_s *command;
 	char *cmd_str = NULL;
 	int eof = 0;
+	int is_built_in;
 
 	while (!exit_shell) {
 		if (!print_prompt()) {
@@ -201,7 +202,8 @@ void loop(void)
 		}
 
 		// if built in
-		if (!built_in(command))
+		is_built_in = built_in(command);
+		if (!is_built_in)
 			run_command(command);
 
 		// add to history
