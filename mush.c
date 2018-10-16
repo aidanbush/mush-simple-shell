@@ -22,12 +22,11 @@
 #include "memwatch.h"
 
 int exit_shell;
-str_arr_s *history = NULL;
+str_arr_s *history;
 
 // sigint handler, does nothing with the signal
 void sigint_handler(int par)
 {
-	return;
 }
 
 // create the new sigint handler
@@ -40,10 +39,8 @@ int create_sigint_handler(void)
 	sigemptyset(&sa.sa_mask);
 
 	int err = sigaction(SIGINT, &sa, NULL);
-	if (err == -1)
-		return 0;
 
-	return 1;
+	return err != -1;
 }
 
 // prints the prompt
@@ -67,12 +64,12 @@ void run_command(str_arr_s *command)
 	int exit_code = 0;
 	int pid = fork();
 
-	if (0 > pid) {
+	if (pid < 0) {
 		// error
 		fprintf(stderr, "unable to create process\n");
-	} else if (0 == pid) {
+	} else if (pid == 0) {
 		// child
-		if (-1 == execvp(command->elems[0], command->elems)) {
+		if (execvp(command->elems[0], command->elems) == -1) {
 			fprintf(stderr, "unable to run command %s\n",
 					command->elems[0]);
 		}
@@ -87,7 +84,7 @@ void run_command(str_arr_s *command)
 
 	exit_code = (WEXITSTATUS(exit_code));
 
-	if (0 == exit_code)
+	if (exit_code == 0)
 		printf("[%d] terminated successfully\n", pid);
 	else
 		printf("[%d] terminated with code %d\n", pid, exit_code);
@@ -97,13 +94,13 @@ void cd(str_arr_s *command)
 {
 	char *home = NULL;
 
-	if (2 < command->cur_len) {
+	if (command->cur_len > 2) {
 		fprintf(stderr, "cd: too many arguments\n");
-	} else if (2 == command->cur_len) {
+	} else if (command->cur_len == 2) {
 		chdir(command->elems[1]);
 	} else {
 		home = getenv("HOME");
-		if (NULL == home) {
+		if (home == NULL) {
 			fprintf(stderr, "cd: $HOME undefined\n");
 			return;
 		}
@@ -115,19 +112,21 @@ void cd(str_arr_s *command)
 void print_history(void)
 {
 	for (int i = 0; i < history->cur_len; i++)
-			printf("%s", history->elems[i]);
+		printf("%s", history->elems[i]);
 }
 
 // sets the environment variable, using the equal sign to
 void set_env(str_arr_s *command)
 {
 	char *eq_pos = NULL;
+
 	if (command->cur_len != 2) {
 		fprintf(stderr, "One argument of the format name=value\n");
 		return;
 	}
 
-	if ((eq_pos = strchr(command->elems[1], '=')) == NULL) {
+	eq_pos = strchr(command->elems[1], '=');
+	if (eq_pos == NULL) {
 		fprintf(stderr, "use the format name=value\n");
 		return;
 	}
@@ -140,27 +139,25 @@ void set_env(str_arr_s *command)
 		fprintf(stderr, "error in setting enviroment variable\n");
 
 	eq_pos[0] = c;
-
-	return;
 }
 
 // checks for and runs built in commands, or returns 0 if it is not built in
 int built_in(str_arr_s *command)
 {
-	if (0 == strncmp(command->elems[0], "cd",
-				strnlen(command->elems[0], 3))) {
+	if (strncmp(command->elems[0], "cd", strnlen(command->elems[0], 3))
+			== 0) {
 		cd(command);
 		return 1;
-	} else if (0 == strncmp(command->elems[0], "history",
-				strnlen(command->elems[0], 8))) {
+	} else if (strncmp(command->elems[0], "history",
+			strnlen(command->elems[0], 8)) == 0) {
 		print_history();
 		return 1;
-	} else if (0 == strncmp(command->elems[0], "exit",
-				strnlen(command->elems[0], 5))) {
+	} else if (strncmp(command->elems[0], "exit",
+			strnlen(command->elems[0], 5)) == 0) {
 		exit_shell = 1;
 		return 1;
-	} else if (0 == strncmp(command->elems[0], "set",
-				strnlen(command->elems[0], 4))) {
+	} else if (strncmp(command->elems[0], "set",
+			strnlen(command->elems[0], 4)) == 0) {
 		set_env(command);
 		return 1;
 	}
@@ -170,7 +167,7 @@ int built_in(str_arr_s *command)
 
 void add_to_history(char *cmd_str)
 {
-	add_str_arr(history, cmd_str, strlen(cmd_str)); // replace with actual length
+	add_str_arr(history, cmd_str, strlen(cmd_str));
 }
 
 void loop(void)
@@ -186,7 +183,7 @@ void loop(void)
 		}
 
 		command = get_command(&cmd_str, &eof);
-		if (NULL == command) {
+		if (command == NULL) {
 			if (eof)
 				exit_shell = 1;
 
@@ -194,7 +191,7 @@ void loop(void)
 			continue;
 		}
 
-		if (0 == command->cur_len) {
+		if (command->cur_len == 0) {
 			// change to goto
 			free_str_arr(command);
 			continue;
@@ -205,7 +202,7 @@ void loop(void)
 			run_command(command);
 
 		// add to history
-		if (NULL != cmd_str) {
+		if (cmd_str != NULL) {
 			add_to_history(cmd_str);
 			free(cmd_str);
 		}
@@ -214,7 +211,7 @@ void loop(void)
 	}
 }
 
-int main()
+int main(void)
 {
 	if (!create_sigint_handler())
 		return 1;

@@ -20,13 +20,13 @@ typedef struct {
 } str_arr_s;
 
 // prints the given command putting spaces between elements
-void print_str_arr(str_arr_s *);
+void print_str_arr(str_arr_s *arr);
 
-void free_str_arr(str_arr_s *);
+void free_str_arr(str_arr_s *arr);
 
 str_arr_s *init_str_arr(int len);
 
-int add_str_arr(str_arr_s *, char *, size_t);
+int add_str_arr(str_arr_s *arr, char *str, size_t len);
 
 // gets the next command from stdin and parses into command struct
 str_arr_s *get_command();

@@ -16,19 +16,22 @@
 
 /* project includes */
 #include "command.h"
+#ifndef _TEST
 #include "memwatch.h"
+#endif
 
 // takes a command pointer and doubles the size + 1 of its elem array
 // returns success or failure
 static int resize_str_arr(str_arr_s *command)
 {
-	if (NULL == command)
+	if (command == NULL)
 		return 0;
 
 	int new_len = (command->max_len + 1) * 2;
 
-	char **tmp = realloc(command->elems, sizeof(char*) * new_len);
-	if (NULL == tmp)
+	char **tmp = realloc(command->elems, sizeof(char *) * new_len);
+
+	if (tmp == NULL)
 		return 0;
 
 	// null remaining values
@@ -46,7 +49,7 @@ static int resize_str_arr(str_arr_s *command)
 // returns 1 on success otherwise 0
 int add_str_arr(str_arr_s *command, char *str, size_t len)
 {
-	if (NULL == command)
+	if (command == NULL)
 		return 0;
 
 	char *new_str = strndup(str, len);
@@ -80,16 +83,16 @@ static char *getenv_len(char *str, size_t len)
 
 static int add_command(str_arr_s *command, char *str, size_t len)
 {
-	if (NULL == command)
+	if (command == NULL)
 		return 0;
 
 	char *env;
 
 	// if environment variable replace
-	if (1 < len && '$' == str[0]) {
+	if (len > 1 && '$' == str[0]) {
 		env = getenv_len(str + 1, len - 1);
 
-		if (NULL != env) {
+		if (env != NULL) {
 			str = env;
 			len = strlen(env);
 		}
@@ -104,11 +107,12 @@ str_arr_s *init_str_arr(int len)
 		return NULL;
 
 	str_arr_s *command = calloc(sizeof(str_arr_s), 1);
-	if (NULL == command)
+
+	if (command == NULL)
 		return NULL;
 
-	command->elems = malloc(sizeof(char*) * len);
-	if (NULL == command->elems)
+	command->elems = malloc(sizeof(char *) * len);
+	if (command->elems == NULL)
 		return NULL;
 
 	for (int i = 0; i < len; i++)
@@ -158,7 +162,7 @@ static str_arr_s *split_command(char *line, size_t len)
 		i++;
 	}
 
-	if (!isspace(line[start]) && start < len){
+	if (!isspace(line[start]) && start < len) {
 		if (!add_command(command, line + start, i - start)) {
 			free_str_arr(command);
 			return NULL;
@@ -187,6 +191,7 @@ str_arr_s *get_command(char **str, int *eof)
 	*eof = 0;
 
 	int old_errno = errno;
+
 	errno = 0;
 
 	read = getline(&line, &len, stdin);
@@ -224,6 +229,7 @@ str_arr_s *get_command(char **str, int *eof)
 #define TEST_STR_LEN		strlen((TEST_STR))
 
 #define TEST_COM_STR_1		"mv 1 2 3 4 5 6 7 8 9 0 dir"
+// checkpatch complains about this test case
 #define TEST_COM_STR_2		"  	messy  command 	line 	 "
 #define TEST_COM_STR_3		"\n"
 
@@ -239,61 +245,63 @@ str_arr_s *get_command(char **str, int *eof)
 #define TEST_COM_NUM_2		3
 #define TEST_COM_NUM_3		0
 
-void test_init_str_arr()
+void test_init_str_arr(void)
 {
 	// test create valid command
 	str_arr_s *command = init_str_arr((TEST_LEN));
 
-	assert(NULL != command);
+	assert(command != NULL);
 	assert((TEST_LEN) == command->max_len);
-	assert(0 == command->cur_len);
-	assert(NULL != command->elems);
+	assert(command->cur_len == 0);
+	assert(command->elems != NULL);
 
 	for (int i = 0; i < (TEST_LEN); i++)
-		assert(NULL == command->elems[i]);
+		assert(command->elems[i] == NULL);
 
 	free_str_arr(command);
 
 	// test non accepted values
-	assert(NULL == init_str_arr(-1));
-	assert(NULL == init_str_arr(0));
+	assert(init_str_arr(-1) == NULL);
+	assert(init_str_arr(0) == NULL);
 }
 
-void test_resize_str_arr()
+void test_resize_str_arr(void)
 {
 	str_arr_s *command = init_str_arr((TEST_LEN));
+
 	for (int i = 0; i < (TEST_LEN); i++)
 		command->elems[0] = (char *) (TEST_VALUE);
 
-	assert(1 == resize_str_arr(command));
-	assert((TEST_LEN) < command->max_len);
+	assert(resize_str_arr(command) == 1);
+	assert(command->max_len > (TEST_LEN));
 
 	for (int i = 0; i < (TEST_LEN); i++)
 		assert((char *) (TEST_VALUE) == command->elems[0]);
 
 	for (int i = (TEST_LEN); i < command->max_len; i++)
-		assert(NULL == command->elems[i]);
+		assert(command->elems[i] == NULL);
 
 	free_str_arr(command);
 
 	// test with NULL command
-	assert(0 == resize_str_arr(NULL));
+	assert(resize_str_arr(NULL) == 0);
 }
 
-void test_add_str_arr()
+void test_add_str_arr(void)
 {
 	str_arr_s *command = init_str_arr((TEST_LEN));
+
 	for (int i = 0; i < (TEST_LEN); i++)
 		command->elems[0] = (char *) (TEST_VALUE);
 
-	assert(1 == add_str_arr(command, TEST_STR, TEST_STR_LEN));
-	assert(0 == strncmp(command->elems[0], TEST_STR, TEST_STR_LEN));
-	assert(1 == command->cur_len);
+	assert(add_str_arr(command, TEST_STR, TEST_STR_LEN) == 1);
+	assert(strncmp(command->elems[0], TEST_STR, TEST_STR_LEN) == 0);
+	assert(command->cur_len == 1);
 
 	free_str_arr(command);
 }
 
-void test_split_command()
+void test_split_command(void)
 {
 	char *command_line = (TEST_COM_STR_1);
 	char *results1[] = TEST_COM_SPLIT_1;
@@ -301,30 +309,31 @@ void test_split_command()
 
 	str_arr_s *command = split_command(command_line, len);
 
-	assert(NULL != command);
+	assert(command != NULL);
 
-	assert(TEST_COM_NUM_1 == command->cur_len);
+	assert(command->cur_len == (TEST_COM_NUM_1));
 
 	for (int i = 0; i < command->cur_len; i++)
-		assert(0 == strncmp(command->elems[i], results1[i],
-					strlen(results1[i])));
+		assert(strncmp(command->elems[i], results1[i],
+			strlen(results1[i])) == 0);
 
 	free_str_arr(command);
 
 	// second test
 	command_line = (TEST_COM_STR_2);
 	char *results2[] = TEST_COM_SPLIT_2;
+
 	len = (TEST_COM_STR_LEN_2);
 
 	command = split_command(command_line, len);
 
-	assert(NULL != command);
+	assert(command != NULL);
 
-	assert(TEST_COM_NUM_2 == command->cur_len);
+	assert(command->cur_len == (TEST_COM_NUM_2));
 
 	for (int i = 0; i < command->cur_len; i++)
-		assert(0 == strncmp(command->elems[i], results2[i],
-					strlen(results2[i])));
+		assert(strncmp(command->elems[i], results2[i],
+			strlen(results2[i])) == 0);
 
 	free_str_arr(command);
 
@@ -334,21 +343,21 @@ void test_split_command()
 
 	command = split_command(command_line, len);
 
-	assert(NULL != command);
+	assert(command != NULL);
 
-	assert(TEST_COM_NUM_3 == command->cur_len);
+	assert(command->cur_len == (TEST_COM_NUM_3));
 
 	free_str_arr(command);
 
 	// test with empty string
 	command = split_command("", 0);
 
-	assert(0 == command->cur_len);
+	assert(command->cur_len == 0);
 
 	free_str_arr(command);
 }
 
-int main()
+int main(void)
 {
 	test_init_str_arr();
 
