@@ -3,7 +3,8 @@
  * Course: CMPT 360
  * Date: Oct. 4, 18
  * File: command.c
- * Description:
+ * Description: command parsing, and helper file for the str_arr_s resizable
+ *	string array.
  */
 
 /* standard libraries */
@@ -54,6 +55,9 @@ int add_str_arr(str_arr_s *command, char *str, size_t len)
 
 	char *new_str = strndup(str, len);
 
+	if (new_str == NULL)
+		return 0;
+
 	if (command->cur_len >= command->max_len)
 		if (!resize_str_arr(command))
 			return 0;
@@ -81,6 +85,7 @@ static char *getenv_len(char *str, size_t len)
 	return env;
 }
 
+// adds a string to the given str_arr_s struct
 static int add_command(str_arr_s *command, char *str, size_t len)
 {
 	if (command == NULL)
@@ -101,6 +106,7 @@ static int add_command(str_arr_s *command, char *str, size_t len)
 	return add_str_arr(command, str, len);
 }
 
+// initializes a str_arr_s struct for the given string
 str_arr_s *init_str_arr(int len)
 {
 	if (len <= 0)
@@ -124,6 +130,7 @@ str_arr_s *init_str_arr(int len)
 	return command;
 }
 
+// frees the given str_arr_s pointer given
 void free_str_arr(str_arr_s *command)
 {
 	for (int i = 0; i < command->cur_len; i++)
@@ -133,7 +140,7 @@ void free_str_arr(str_arr_s *command)
 	free(command);
 }
 
-// TODO add escape characters
+// split the given string into commands and add to a new str_arr_s
 static str_arr_s *split_command(char *line, size_t len)
 {
 	str_arr_s *command = init_str_arr(COMMAND_START_SIZE);
@@ -172,6 +179,7 @@ static str_arr_s *split_command(char *line, size_t len)
 	return command;
 }
 
+// prints the given str_arr_s
 void print_str_arr(str_arr_s *command)
 {
 	printf("cur_len: %d\n", command->cur_len);
@@ -181,6 +189,7 @@ void print_str_arr(str_arr_s *command)
 	printf("\n");
 }
 
+// retrieves the next command from stdin
 str_arr_s *get_command(char **str, int *eof)
 {
 	char *line = NULL;
@@ -219,7 +228,7 @@ str_arr_s *get_command(char **str, int *eof)
 	return command;
 }
 
-// tests
+// tests ifdef
 #ifdef _TEST
 
 // #define TEST_LEN_MIN	1
@@ -245,6 +254,7 @@ str_arr_s *get_command(char **str, int *eof)
 #define TEST_COM_NUM_2		3
 #define TEST_COM_NUM_3		0
 
+// tests init_str_arr
 void test_init_str_arr(void)
 {
 	// test create valid command
@@ -265,6 +275,7 @@ void test_init_str_arr(void)
 	assert(init_str_arr(0) == NULL);
 }
 
+// tests resize_str_arr
 void test_resize_str_arr(void)
 {
 	str_arr_s *command = init_str_arr((TEST_LEN));
@@ -287,6 +298,7 @@ void test_resize_str_arr(void)
 	assert(resize_str_arr(NULL) == 0);
 }
 
+// tests add_str_arr
 void test_add_str_arr(void)
 {
 	str_arr_s *command = init_str_arr((TEST_LEN));
@@ -301,6 +313,7 @@ void test_add_str_arr(void)
 	free_str_arr(command);
 }
 
+// tests split_command
 void test_split_command(void)
 {
 	char *command_line = (TEST_COM_STR_1);
@@ -357,6 +370,7 @@ void test_split_command(void)
 	free_str_arr(command);
 }
 
+// main function for testing
 int main(void)
 {
 	test_init_str_arr();

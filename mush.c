@@ -3,7 +3,8 @@
  * Course: CMPT 360
  * Date: Oct. 4, 18
  * File: mush.c
- * Description: Main mush shell file.
+ * Description: Main mush shell file, controls the mian process and starts
+ *	others.
  */
 
 /* standard libraries */
@@ -98,13 +99,13 @@ void cd(str_arr_s *command)
 	char *home = NULL;
 
 	if (command->cur_len > 2) {
-		fprintf(stderr, "cd: too many arguments\n");
+		fprintf(stderr, "%s: too many arguments\n", __func__);
 	} else if (command->cur_len == 2) {
 		chdir(command->elems[1]);
 	} else {
 		home = getenv("HOME");
 		if (home == NULL) {
-			fprintf(stderr, "cd: $HOME undefined\n");
+			fprintf(stderr, "%s: $HOME undefined\n", __func__);
 			return;
 		}
 		chdir(home);
@@ -115,7 +116,7 @@ void cd(str_arr_s *command)
 void print_history(void)
 {
 	for (int i = 0; i < history->cur_len; i++)
-		printf("%s", history->elems[i]);
+		printf(" %d %s", i, history->elems[i]);
 }
 
 // sets the environment variable, using the equal sign to
@@ -168,12 +169,14 @@ int built_in(str_arr_s *command)
 	return 0;
 }
 
+// adds the given command string to the history
 void add_to_history(char *cmd_str)
 {
 	add_str_arr(history, cmd_str, strlen(cmd_str));
 }
 
-void loop(void)
+// main loop that controls the shell
+void main_loop(void)
 {
 	str_arr_s *command;
 	char *cmd_str = NULL;
@@ -216,6 +219,7 @@ void loop(void)
 	}
 }
 
+// main function prepares and starts the main loop
 int main(void)
 {
 	if (!create_sigint_handler())
@@ -223,7 +227,7 @@ int main(void)
 
 	history = init_str_arr(COMMAND_START_SIZE);
 
-	loop();
+	main_loop();
 
 	free_str_arr(history);
 	history = NULL;
