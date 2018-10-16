@@ -24,6 +24,9 @@
 int exit_shell;
 str_arr_s *history;
 
+int gargc;
+char **gargv;
+
 // sigint handler, does nothing with the signal
 void sigint_handler(int par)
 {

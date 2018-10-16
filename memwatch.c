@@ -406,8 +406,8 @@ static void		mwMutexLock( void );
 static void		mwMutexUnlock( void );
 #endif
 
-// extern int gargc;
-// extern char** gargv;
+extern int gargc;
+extern char** gargv;
 
 /***********************************************************************
 ** System functions
@@ -459,11 +459,9 @@ void mwInit( void ) {
             "=============\n");
         mwWrite( "\nStarted at %s\n", ctime( &tid ) );
 		mwWrite( "Command line: ");
-		/*
-		 *for (i=1; i<gargc; i++) {
-		 *	mwWrite( "%s ", gargv[i]);
-		 *}
-		 */
+		for (i=1; i<gargc; i++) {
+			mwWrite( "%s ", gargv[i]);
+		}
 		mwWrite( "\n");
 
 /**************************************************************** Generic */
